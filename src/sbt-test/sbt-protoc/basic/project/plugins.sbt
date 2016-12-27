@@ -5,3 +5,5 @@
                                   |Specify this property using the scriptedLaunchOpts -D.""".stripMargin)
   else addSbtPlugin("com.thesamet" % "sbt-protoc" % pluginVersion)
 }
+
+addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.6.1")
