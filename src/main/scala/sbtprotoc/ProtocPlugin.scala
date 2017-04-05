@@ -34,6 +34,7 @@ object ProtocPlugin extends AutoPlugin {
   private[this] val arguments = TaskKey[Arguments]("protoc-arguments")
 
   private[this] final case class Arguments(
+    protocVersion: String,
     includePaths: Seq[File],
     protocOptions: Seq[String],
     pythonExe: String,
@@ -44,7 +45,7 @@ object ProtocPlugin extends AutoPlugin {
     import sbt.Cache.seqFormat
     import sbinary.DefaultProtocol._
     implicit val instance: sbinary.Format[Arguments] =
-      asProduct5(apply)(Function.unlift(unapply))
+      asProduct6(apply)(Function.unlift(unapply))
   }
 
   import autoImport.PB
@@ -79,6 +80,7 @@ object ProtocPlugin extends AutoPlugin {
   // Settings that are applied at configuration (Compile, Test) scope.
   def protobufConfigSettings: Seq[Setting[_]] = Seq(
     arguments := Arguments(
+      protocVersion = PB.protocVersion.value,
       includePaths = PB.includePaths.value,
       protocOptions = PB.protocOptions.value,
       pythonExe = PB.pythonExe.value,
