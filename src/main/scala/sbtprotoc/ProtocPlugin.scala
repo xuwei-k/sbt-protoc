@@ -38,11 +38,15 @@ object ProtocPlugin extends AutoPlugin {
     protocOptions: Seq[String],
     pythonExe: String,
     deleteTargetDirectory: Boolean,
-    targets: Seq[(File, Seq[String])]
+    targets: Seq[(String, Seq[protocbridge.Artifact], File, Seq[String])]
   )
   private[this] object Arguments {
     import sbt.Cache.seqFormat
     import sbinary.DefaultProtocol._
+
+    implicit val artifactInstance: sbinary.Format[protocbridge.Artifact] =
+      asProduct4(protocbridge.Artifact.apply)(Function.unlift(protocbridge.Artifact.unapply))
+
     implicit val instance: sbinary.Format[Arguments] =
       asProduct5(apply)(Function.unlift(unapply))
   }
@@ -83,7 +87,9 @@ object ProtocPlugin extends AutoPlugin {
       protocOptions = PB.protocOptions.value,
       pythonExe = PB.pythonExe.value,
       deleteTargetDirectory = PB.deleteTargetDirectory.value,
-      targets = PB.targets.value.map(target => (target.outputPath, target.options))
+      targets = PB.targets.value.map(target =>
+        (target.generator.name, target.generator.suggestedDependencies, target.outputPath, target.options)
+      )
     ),
     PB.recompile := arguments.previous.exists(_ != arguments.value),
     PB.protocOptions := Nil,
