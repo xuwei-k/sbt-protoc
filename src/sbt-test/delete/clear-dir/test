@@ -1,5 +1,5 @@
-> protoc-generate
+> protocGenerate
 $ exists target/scala-2.10/src_managed/main/test/Test.java
 $ delete src/main/protobuf/test.proto
-> protoc-generate
+> protocGenerate
 -$ exists target/scala-2.10/src_managed/main/test/Test.java

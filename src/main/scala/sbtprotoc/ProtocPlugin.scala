@@ -1,5 +1,6 @@
 package sbtprotoc
 
+import sjsonnew._, BasicJsonProtocol._
 import sbt._
 import Keys._
 import java.io.File
@@ -41,10 +42,29 @@ object ProtocPlugin extends AutoPlugin {
     targets: Seq[(File, Seq[String])]
   )
   private[this] object Arguments {
-    import sbt.Cache.seqFormat
-    import sbinary.DefaultProtocol._
-    implicit val instance: sbinary.Format[Arguments] =
-      asProduct5(apply)(Function.unlift(unapply))
+    implicit val file: JsonFormat[File] = new JsonFormat[File] {
+       val string = implicitly[JsonFormat[String]]
+       def read[J](jsOpt: Option[J], unbuilder: Unbuilder[J]) =
+         new File(string.read(jsOpt, unbuilder))
+       def write[J](obj: File, builder: Builder[J]) =
+         string.write(obj.toString, builder)
+    }
+
+    import sjsonnew.LList.:*:
+
+    implicit val instance =
+      sjsonnew.IsoLList.iso(
+        {a: Arguments => ("1", a.includePaths) :*: ("2", a.protocOptions) :*: ("3", a.pythonExe) :*: ("4", a.deleteTargetDirectory) :*: ("5", a.targets) :*: LNil},
+        (x: Seq[File] :*: Seq[String] :*: String :*: Boolean :*: Seq[(File, Seq[String])] :*: LNil) => {
+          Arguments(
+            x.head,
+            x.tail.head,
+            x.tail.tail.head,
+            x.tail.tail.tail.head,
+            x.tail.tail.tail.tail.head
+          )
+        }
+      )
   }
 
   import autoImport.PB
@@ -122,8 +142,9 @@ object ProtocPlugin extends AutoPlugin {
     }
 
   private def makeArtifact(f: protocbridge.Artifact): ModuleID =
-    ModuleID(f.groupId, f.artifactId, f.version, crossVersion =
-      if (f.crossVersion) CrossVersion.binary else CrossVersion.Disabled)
+    ModuleID(
+      organization = f.groupId, name = f.artifactId, revision = f.version
+    ).withCrossVersion(if (f.crossVersion) CrossVersion.binary else Disabled())
 
   private[this] def compile(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], pythonExe: String, deleteTargetDirectory: Boolean, log: Logger) = {
     // Sort by the length of path names to ensure that delete parent directories before deleting child directories.
@@ -168,8 +189,9 @@ object ProtocPlugin extends AutoPlugin {
     }
   }
 
-  private[this] def sourceGeneratorTask(key: TaskKey[Seq[File]]): Def.Initialize[Task[Seq[File]]] = Def.task {
-    val schemas = (PB.protoSources in key).value.toSet[File].flatMap(srcDir => (srcDir ** ((includeFilter in key).value -- (excludeFilter in key).value)).get
+  private[this] def sourceGeneratorTask(key: TaskKey[Seq[File]]): Def.Initialize[Task[Seq[File]]] = Def.task{
+    val filter = (includeFilter in key).value -- (excludeFilter in key).value
+    val schemas = (PB.protoSources in key).value.toSet[File].flatMap(srcDir => (srcDir ** filter).get
       .map(_.getAbsoluteFile))
     // Include Scala binary version like "_2.11" for cross building.
     val cacheFile = (streams in key).value.cacheDirectory / s"protobuf_${scalaBinaryVersion.value}"
