@@ -1,3 +1,5 @@
+> compile:managedSources
+$ pause
 > compile
 
 # test for https://github.com/sbt/sbt-protobuf/pull/29
