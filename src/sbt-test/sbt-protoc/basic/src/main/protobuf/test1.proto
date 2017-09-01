@@ -5,3 +5,8 @@ package test;
 message test1{
   int32 thing = 1;
 }
+
+enum Foo {
+  A = 0;
+  B = 1;
+}

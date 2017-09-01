@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
 
 sbtPlugin := true
 
-ScriptedPlugin.scriptedSettings
+enablePlugins(ScriptedPlugin)
 
 scriptedBufferLog := false
 
@@ -29,10 +29,6 @@ scriptedLaunchOpts += s"-Dplugin.version=${version.value}"
 licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html"))
 
 publishMavenStyle := false
-
-bintrayRepository := "sbt-plugins"
-
-bintrayOrganization in bintray := None
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
@@ -43,10 +39,7 @@ releaseProcess := Seq[ReleaseStep](
   commitReleaseVersion,
   tagRelease,
   releaseStepCommandAndRemaining("^ publish"),
-  releaseStepTask(bintrayRelease),
   setNextVersion,
   commitNextVersion,
   pushChanges
 )
-
-crossSbtVersions := Seq("0.13.16", "1.0.0")

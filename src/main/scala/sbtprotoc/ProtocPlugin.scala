@@ -3,8 +3,9 @@ package sbtprotoc
 import sbt._
 import Keys._
 import java.io.File
+import java.net.URLClassLoader
 
-import protocbridge.Target
+import protocbridge.{JvmGenerator, Target}
 import sbt.plugins.JvmPlugin
 
 
@@ -97,7 +98,17 @@ object ProtocPlugin extends AutoPlugin with Compat {
     PB.generate := sourceGeneratorTask(PB.generate).dependsOn(PB.unpackDependencies).value,
 
     PB.runProtoc := { args =>
-      com.github.os72.protocjar.Protoc.runProtoc(PB.protocVersion.value +: args.toArray)
+      com.github.os72.protocjar.Protoc.runProtoc(
+        PB.protocVersion.value +: args.toArray
+      )
+      /*
+      forkRun(
+        PB.protocVersion.value +: args.toArray,
+        PB.targets.value.map(_.generator).collect{
+          case JvmGenerator(_, gen) => gen.getClass
+        }
+      )
+      */
     },
 
     sourceGenerators += PB.generate.taskValue
@@ -108,12 +119,54 @@ object ProtocPlugin extends AutoPlugin with Compat {
 
   case class UnpackedDependencies(dir: File, files: Seq[File])
 
+
   private[this] def executeProtoc(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], pythonExe: String, log: Logger) : Int =
     try {
       val incPath = includePaths.map("-I" + _.getCanonicalPath)
+      /*
       protocbridge.ProtocBridge.run(protocCommand, targets,
         incPath ++ protocOptions ++ schemas.map(_.getCanonicalPath),
         pluginFrontend = protocbridge.frontend.PluginFrontend.newInstance(pythonExe=pythonExe))
+      */
+
+      val jars = jarFiles(
+        targets.map(_.generator).collect {
+          case JvmGenerator(_, gen) => gen.getClass
+        }
+      )
+      println(jars)
+      val jarsToClassload = sbt.io.Path.toURLs(jars)
+      val cachedLoader = new URLClassLoader(jarsToClassload, rootLoader)
+      val clazz = Class.forName(protocbridge.ProtocBridge.getClass.getName, false, cachedLoader)
+      val instance = clazz.getField(scala.reflect.NameTransformer.MODULE_INSTANCE_NAME).get(null)
+      println(instance)
+      println(clazz.getMethods().toList)
+      println(clazz.getMethods().filter(_.getName == "run").toList)
+      println(clazz.getDeclaredMethods().toList)
+      println(clazz.getDeclaredMethods().filter(_.getName == "run").toList)
+      val method = clazz.getMethods().filter(_.getName == "run").head
+
+
+      println(protocCommand.getClass)
+      println(targets.getClass)
+      println((incPath ++ protocOptions ++ schemas.map(_.getCanonicalPath)).getClass)
+      println(protocbridge.frontend.PluginFrontend.newInstance(pythonExe=pythonExe).getClass)
+
+      method.invoke(
+        instance,
+        new scala.Function1[Seq[String], Int] {
+          override def apply(v1: Seq[String]) = protocCommand.apply(v1)
+        },
+        targets.asInstanceOf[Seq[_]],
+        (incPath ++ protocOptions ++ schemas.map(_.getCanonicalPath)).asInstanceOf[Seq[_]],
+        //protocbridge.frontend.PluginFrontend.newInstance(pythonExe=pythonExe)
+        {
+          val c = Class.forName(protocbridge.frontend.PluginFrontend.getClass.getName, false, cachedLoader)
+          val i = c.getField(scala.reflect.NameTransformer.MODULE_INSTANCE_NAME).get(null)
+          val m = c.getMethods.filter(_.getName == "newInstance").head
+          m.invoke(i, pythonExe)
+        }
+      ).asInstanceOf[Integer]
     } catch { case e: Exception =>
       throw new RuntimeException("error occurred while compiling protobuf files: %s" format(e.getMessage), e)
     }

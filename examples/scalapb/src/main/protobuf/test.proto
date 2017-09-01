@@ -2,6 +2,11 @@ syntax = "proto2";
 
 package myproto;
 
+enum Foo {
+  A = 0;
+  B = 1;
+}
+
 message Test {
   optional int32 foo = 1;
 }
