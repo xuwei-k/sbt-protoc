@@ -16,13 +16,15 @@ val grpcJavaVersion = "1.4.0"
 val grpcExeUrl =
   url(s"http://repo1.maven.org/maven2/io/grpc/${grpcArtifactId}/${grpcJavaVersion}/${grpcExeFileName}")
 
-val grpcExePath = SettingKey[xsbti.api.Lazy[File]]("grpcExePath")
+val grpcExePath = SettingKey[File]("grpcExePath")
 
-grpcExePath := xsbti.SafeLazy {
+grpcExePath := {
   val exe: File = (baseDirectory in ThisBuild).value / ".bin" / grpcExeFileName
   if (!exe.exists) {
     println("grpc protoc plugin (for Java) does not exist. Downloading.")
-    IO.download(grpcExeUrl, exe)
+    sbt.io.Using.urlInputStream(grpcExeUrl) { inputStream =>
+      IO.transfer(inputStream, exe)
+    }
     exe.setExecutable(true)
   } else {
     println("grpc protoc plugin (for Java) exists.")

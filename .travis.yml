@@ -3,7 +3,11 @@ jdk:
 language: scala
 sudo: false
 script:
-   - sbt ^test ^scripted
-   - cd examples
-   - for d in */ ; do cd "$d" &&  sbt test && cd ../ ; done
-
+- cd examples
+- for d in */ ; do cd "$d" && sbt -sbt-version "${SBT_VERSION}" test && cd ../ ; done
+matrix:
+  include:
+  - script:
+    - sbt ^test ^scripted
+    - cd examples
+  - env: SBT_VERSION="1.0.3"
