@@ -1,3 +1,5 @@
+import com.trueaccord.scalapb.compiler.Version.grpcJavaVersion
+
 def grpcExeFileName = {
   val os = if (scala.util.Properties.isMac){
     "osx-x86_64"
@@ -10,8 +12,6 @@ def grpcExeFileName = {
 }
 
 val grpcArtifactId = "protoc-gen-grpc-java"
-
-val grpcJavaVersion = "1.4.0"
 
 val grpcExeUrl =
   url(s"http://repo1.maven.org/maven2/io/grpc/${grpcArtifactId}/${grpcJavaVersion}/${grpcExeFileName}")
