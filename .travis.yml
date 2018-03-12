@@ -1,9 +1,6 @@
 jdk:
-  - oraclejdk8
+  - oraclejdk9
 language: scala
 sudo: false
 script:
    - sbt ^test ^scripted
-   - cd examples
-   - for d in */ ; do cd "$d" &&  sbt test && cd ../ ; done
-
