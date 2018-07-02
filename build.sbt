@@ -1,5 +1,7 @@
 import ReleaseTransformations._
 
+enablePlugins(SbtPlugin)
+
 organization := "com.thesamet"
 
 name := "sbt-protoc"
@@ -48,5 +50,3 @@ releaseProcess := Seq[ReleaseStep](
   commitNextVersion,
   pushChanges
 )
-
-crossSbtVersions := Seq("0.13.16", "1.1.6")
