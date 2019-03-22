@@ -42,6 +42,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
       )
       val protocVersion = SettingKey[String]("protoc-version", "Version flag to pass to protoc-jar")
 
+      @deprecated("this option has no effect. and will be removed", "0.9.20")
       val pythonExe = SettingKey[String](
         "python-executable",
         "Full path for a Python.exe (deprecated and ignored)"
